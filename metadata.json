@@ -1,0 +1,8 @@
+{
+  "name": "Remix 리든게임",
+  "description": "음악의 리듬과 박자에 맞춰 3×3 그리드의 노트를 조준하고 타격하는 리듬 액션 게임",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "protocol": 1,
+  "id": "student.825f40a63b664939bf97c2ab6a11efd8",
+  "name": "리든게임",
+  "profile": {
+    "version": 3,
+    "devices": {
+      "tilt": {
+        "type": "gyro",
+        "label": "허브 자세·방향",
+        "use": "input",
+        "behavior": {
+          "preset": "hub_control",
+          "description": "허브의 자이로가 기우는 데로 마우스가 간다",
+          "horizontal": "turn",
+          "adaptive_interpolation": false,
+          "range": 10,
+          "deadzone": 0,
+          "smooth_ms": 10,
+          "sensitivity": 1,
+          "gamma": 1,
+          "interpolate_ms": 0,
+          "invert_x": false,
+          "invert_y": false
+        }
+      }
+    }
+  },
+  "commands": [
+    "light",
+    "stop"
+  ],
+  "description": "함 해 보셔",
+  "controls": [
+    "마우스를 움직여 3×3 그리드의 노트를 조준한다.",
+    "음악의 박자에 맞춰 마우스 왼쪽 버튼을 클릭해 노트를 타격한다.",
+    "정확한 타이밍에 입력할수록 높은 점수를 얻고 콤보를 이어갈 수 있다.",
+    "노트의 위치와 리듬을 빠르게 파악해 곡을 끝까지 플레이한다."
+  ],
+  "inputs": [],
+  "revision": "1",
+  "cover": "",
+  "preview": ""
+}

@@ -1,0 +1,2302 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>리든게임</title>
+    <meta name="description" content="음악의 리듬과 박자에 맞춰 3×3 그리드의 노트를 조준하고 타격하는 리듬 액션 게임" />
+    <meta property="og:title" content="리든게임" />
+    <meta property="og:description" content="음악의 리듬과 박자에 맞춰 3×3 그리드의 노트를 조준하고 타격하는 리듬 액션 게임" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <style>
+      :root {
+        --bg-main: #060913;
+        --bg-surface: #0d1424;
+        --bg-surface-elevated: #151f38;
+        --border-subtle: rgba(56, 189, 248, 0.2);
+        --border-glow: rgba(56, 189, 248, 0.45);
+        --neon-cyan: #00e5ff;
+        --neon-magenta: #f43f5e;
+        --neon-purple: #a855f7;
+        --neon-yellow: #facc15;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: var(--bg-main);
+        color: var(--text-primary);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+
+      #app-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 30%, #0d1833 0%, #060913 80%);
+      }
+
+      /* Header */
+      header {
+        height: 56px;
+        min-height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: rgba(6, 9, 19, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 50;
+      }
+
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+
+      .brand-title {
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--neon-cyan);
+        text-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+      }
+
+      .brand-subtitle {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .status-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #64748b;
+      }
+
+      .status-dot.active {
+        background-color: var(--neon-cyan);
+        box-shadow: 0 0 8px var(--neon-cyan);
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        transition: all 0.15s ease;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .btn:hover:not(:disabled) {
+        border-color: var(--neon-cyan);
+        background: var(--bg-surface-elevated);
+        box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+      }
+
+      .btn:active:not(:disabled) {
+        transform: scale(0.98);
+      }
+
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        border-color: var(--neon-cyan);
+        color: #ffffff;
+        box-shadow: 0 0 16px rgba(0, 229, 255, 0.35);
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        box-shadow: 0 0 24px rgba(0, 229, 255, 0.55);
+      }
+
+      .btn-accent {
+        background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+        border-color: var(--neon-purple);
+      }
+
+      .btn-accent:hover:not(:disabled) {
+        background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+        box-shadow: 0 0 16px rgba(168, 85, 247, 0.4);
+      }
+
+      .btn-large {
+        padding: 14px 28px;
+        font-size: 17px;
+        border-radius: 10px;
+      }
+
+      /* Screens */
+      .screen {
+        position: absolute;
+        top: 56px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .screen.active {
+        display: flex;
+      }
+
+      /* Menu Screen */
+      #screen-menu {
+        padding: 24px;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      .menu-layout {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 28px;
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+      }
+
+      @media (max-width: 900px) {
+        .menu-layout {
+          grid-template-columns: 1fr;
+          overflow-y: auto;
+        }
+      }
+
+      .card {
+        background: rgba(13, 20, 36, 0.7);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        backdrop-filter: blur(8px);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 12px;
+      }
+
+      .card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--neon-cyan);
+        letter-spacing: 0.05em;
+      }
+
+      .song-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+        flex: 1;
+        max-height: 380px;
+        padding-right: 4px;
+      }
+
+      .song-item {
+        background: rgba(21, 31, 56, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        padding: 14px 16px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .song-item:hover {
+        border-color: var(--neon-cyan);
+        background: rgba(21, 31, 56, 0.85);
+        transform: translateX(4px);
+      }
+
+      .song-item.selected {
+        border-color: var(--neon-cyan);
+        background: linear-gradient(90deg, rgba(0, 229, 255, 0.12) 0%, rgba(13, 20, 36, 0.9) 100%);
+        box-shadow: 0 0 16px rgba(0, 229, 255, 0.2);
+      }
+
+      .song-info-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .song-meta {
+        font-size: 12px;
+        color: var(--text-secondary);
+        display: flex;
+        gap: 12px;
+      }
+
+      .song-bpm-badge {
+        font-family: var(--font-mono);
+        color: var(--neon-yellow);
+        font-weight: 600;
+      }
+
+      .segment-group {
+        display: flex;
+        background: rgba(6, 9, 19, 0.7);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 4px;
+        gap: 4px;
+      }
+
+      .segment-btn {
+        flex: 1;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .segment-btn:hover {
+        color: var(--text-primary);
+      }
+
+      .segment-btn.active {
+        background: var(--neon-cyan);
+        color: #060913;
+        font-weight: 700;
+        box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+      }
+
+      .menu-footer {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-subtle);
+        gap: 16px;
+      }
+
+      .action-cluster {
+        display: flex;
+        gap: 12px;
+      }
+
+      /* Game Playing Screen */
+      #screen-game {
+        position: relative;
+        background: #02040a;
+      }
+
+      #game-hud {
+        position: absolute;
+        top: 16px;
+        left: 20px;
+        right: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        z-index: 20;
+        pointer-events: none;
+      }
+
+      .hud-block {
+        background: rgba(6, 9, 19, 0.75);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 8px 16px;
+        backdrop-filter: blur(6px);
+        pointer-events: auto;
+      }
+
+      .hud-song-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .hud-song-sub {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 2px;
+      }
+
+      .hud-progress-wrap {
+        width: 180px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        margin-top: 6px;
+        overflow: hidden;
+      }
+
+      .hud-progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+        transition: width 0.1s linear;
+      }
+
+      .hud-center {
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .combo-display {
+        font-size: 38px;
+        font-weight: 900;
+        font-family: var(--font-mono);
+        color: var(--neon-cyan);
+        text-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+        letter-spacing: 0.05em;
+        line-height: 1;
+        transition: transform 0.08s ease;
+      }
+
+      .combo-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        color: var(--text-secondary);
+      }
+
+      .hud-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+      }
+
+      .stat-cluster {
+        display: flex;
+        gap: 16px;
+        font-family: var(--font-mono);
+      }
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .stat-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+
+      .stat-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+      }
+
+      #game-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        cursor: crosshair;
+      }
+
+      /* 3x3 Overlay Buttons for Touch/Click Targeting */
+      #grid-click-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(80vw, 80vh, 520px);
+        height: min(80vw, 80vh, 520px);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        gap: 12px;
+        z-index: 10;
+        pointer-events: auto;
+      }
+
+      .grid-hit-cell {
+        position: relative;
+        border: 2px solid rgba(56, 189, 248, 0.25);
+        border-radius: 12px;
+        background: rgba(13, 20, 36, 0.15);
+        cursor: pointer;
+        transition: background-color 0.1s ease, border-color 0.1s ease, transform 0.08s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .grid-hit-cell:hover, .grid-hit-cell.aimed {
+        border-color: var(--neon-cyan);
+        background: rgba(0, 229, 255, 0.12);
+        box-shadow: 0 0 16px rgba(0, 229, 255, 0.35) inset;
+      }
+
+      .grid-hit-cell:active, .grid-hit-cell.pulse {
+        border-color: #ffffff;
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(0.97);
+      }
+
+      .cell-key-hint {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.4);
+        pointer-events: none;
+      }
+
+      #game-bottom-bar {
+        position: absolute;
+        bottom: 16px;
+        left: 20px;
+        right: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 20;
+        pointer-events: auto;
+      }
+
+      .gyro-hud {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(6, 9, 19, 0.75);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      /* Modals */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 4, 10, 0.85);
+        backdrop-filter: blur(10px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        padding: 20px;
+      }
+
+      .modal-backdrop.active {
+        display: flex;
+      }
+
+      .modal-box {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-glow);
+        border-radius: 14px;
+        padding: 28px;
+        width: 100%;
+        max-width: 480px;
+        box-shadow: 0 0 32px rgba(0, 229, 255, 0.2);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .modal-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--neon-cyan);
+        letter-spacing: 0.05em;
+      }
+
+      .modal-content {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .slider-input {
+        flex: 1;
+        max-width: 220px;
+        accent-color: var(--neon-cyan);
+        cursor: pointer;
+      }
+
+      /* Results Screen */
+      #screen-result {
+        padding: 32px 24px;
+        align-items: center;
+        justify-content: center;
+        max-width: 680px;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      .result-card {
+        background: rgba(13, 20, 36, 0.8);
+        border: 1px solid var(--border-glow);
+        border-radius: 16px;
+        padding: 32px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        box-shadow: 0 0 40px rgba(0, 229, 255, 0.2);
+      }
+
+      .result-grade {
+        font-size: 72px;
+        font-weight: 900;
+        font-family: var(--font-mono);
+        color: var(--neon-cyan);
+        text-shadow: 0 0 24px rgba(0, 229, 255, 0.8);
+        line-height: 1;
+      }
+
+      .result-grid {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+      }
+
+      .result-stat-box {
+        background: rgba(21, 31, 56, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .result-judgment-table {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .judgment-box {
+        background: rgba(6, 9, 19, 0.6);
+        border-radius: 6px;
+        padding: 10px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .judgment-box.perfect { border-color: rgba(0, 229, 255, 0.4); }
+      .judgment-box.great { border-color: rgba(168, 85, 247, 0.4); }
+      .judgment-box.good { border-color: rgba(250, 204, 21, 0.4); }
+      .judgment-box.miss { border-color: rgba(244, 63, 94, 0.4); }
+
+      .judgment-name {
+        font-size: 11px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .judgment-box.perfect .judgment-name { color: var(--neon-cyan); }
+      .judgment-box.great .judgment-name { color: var(--neon-purple); }
+      .judgment-box.good .judgment-name { color: var(--neon-yellow); }
+      .judgment-box.miss .judgment-name { color: var(--neon-magenta); }
+
+      .judgment-val {
+        font-size: 18px;
+        font-weight: 700;
+        font-family: var(--font-mono);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- REPLAY Manifest -->
+    <script type="application/json" id="replay-manifest">
+{
+  "protocol": 1,
+  "id": "student.825f40a63b664939bf97c2ab6a11efd8",
+  "name": "리든게임",
+  "profile": {
+    "version": 3,
+    "devices": {
+      "tilt": {
+        "type": "gyro",
+        "label": "허브 자세·방향",
+        "use": "input",
+        "behavior": {
+          "preset": "hub_control",
+          "description": "허브의 자이로가 기우는 데로 마우스가 간다",
+          "horizontal": "turn",
+          "adaptive_interpolation": false,
+          "range": 10,
+          "deadzone": 0,
+          "smooth_ms": 10,
+          "sensitivity": 1,
+          "gamma": 1,
+          "interpolate_ms": 0,
+          "invert_x": false,
+          "invert_y": false
+        }
+      }
+    }
+  },
+  "commands": [
+    "light",
+    "stop"
+  ],
+  "description": "함 해 보셔",
+  "controls": [
+    "마우스를 움직여 3×3 그리드의 노트를 조준한다.",
+    "음악의 박자에 맞춰 마우스 왼쪽 버튼을 클릭해 노트를 타격한다.",
+    "정확한 타이밍에 입력할수록 높은 점수를 얻고 콤보를 이어갈 수 있다.",
+    "노트의 위치와 리듬을 빠르게 파악해 곡을 끝까지 플레이한다."
+  ],
+  "inputs": [],
+  "revision": "1",
+  "cover": "",
+  "preview": ""
+}
+    </script>
+
+    <!-- REPLAY SPIKE SDK -->
+    <script src="spike.js"></script>
+
+    <!-- Main Game Container -->
+    <div id="app-container">
+      <!-- Top Navigation Header -->
+      <header>
+        <div class="brand">
+          <span class="brand-title">RHYTHIA</span>
+          <span class="brand-subtitle">리든게임</span>
+        </div>
+
+        <div class="header-actions">
+          <div class="status-pill" id="hub-status-pill">
+            <span class="status-dot" id="hub-status-dot"></span>
+            <span id="hub-status-text">허브 대기 중</span>
+          </div>
+
+          <button class="btn" id="btn-sound-toggle" aria-label="음소거 토글">
+            <span id="sound-toggle-text">소리 켬</span>
+          </button>
+
+          <button class="btn" id="btn-open-settings" aria-label="설정 열기">
+            설정
+          </button>
+        </div>
+      </header>
+
+      <!-- Screen: Menu & Song Select -->
+      <main class="screen active" id="screen-menu">
+        <div class="menu-layout">
+          <!-- Left: Song Select -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">음악 선택</span>
+              <span class="brand-subtitle" id="song-count-label">3곡 수록</span>
+            </div>
+
+            <div class="song-list" id="song-list-container">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Right: Game Options & Record -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">난이도 및 속도</span>
+            </div>
+
+            <div>
+              <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">난이도</div>
+              <div class="segment-group" id="difficulty-group">
+                <button class="segment-btn active" data-diff="easy">쉬움</button>
+                <button class="segment-btn" data-diff="normal">보통</button>
+                <button class="segment-btn" data-diff="hard">어려움</button>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">노트 접근 속도</div>
+              <div class="segment-group" id="speed-group">
+                <button class="segment-btn" data-speed="1.0">1.0배</button>
+                <button class="segment-btn active" data-speed="1.5">1.5배</button>
+                <button class="segment-btn" data-speed="2.0">2.0배</button>
+              </div>
+            </div>
+
+            <div style="margin-top: 8px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);">
+              <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">최고 기록</div>
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 14px;">
+                <span style="color: var(--text-muted);">점수</span>
+                <span id="menu-record-score" style="font-weight: 700; color: #fff;">0</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 14px; margin-top: 4px;">
+                <span style="color: var(--text-muted);">정확도</span>
+                <span id="menu-record-acc" style="font-weight: 700; color: var(--neon-cyan);">0.00%</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 14px; margin-top: 4px;">
+                <span style="color: var(--text-muted);">최대 콤보</span>
+                <span id="menu-record-combo" style="font-weight: 700; color: var(--neon-yellow);">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu Bottom Actions -->
+        <div class="menu-footer">
+          <div class="action-cluster">
+            <button class="btn" id="btn-show-guide">조작 안내</button>
+            <button class="btn" id="btn-recalibrate-menu">중심 다시 맞추기 (R)</button>
+          </div>
+
+          <!-- Initial Start Button (Disabled by default as mandated by REPLAY specs) -->
+          <button class="btn btn-primary btn-large" id="btn-start-game" disabled>
+            REPLAY에서 실행해 주세요
+          </button>
+        </div>
+      </main>
+
+      <!-- Screen: Active Game Play Arena -->
+      <section class="screen" id="screen-game">
+        <div id="game-hud">
+          <div class="hud-block">
+            <div class="hud-song-title" id="hud-song-name">Neon Pulse</div>
+            <div class="hud-song-sub" id="hud-song-diff">보통 · 120 BPM</div>
+            <div class="hud-progress-wrap">
+              <div class="hud-progress-bar" id="hud-progress-bar"></div>
+            </div>
+          </div>
+
+          <div class="hud-center">
+            <div class="combo-display" id="hud-combo">0</div>
+            <div class="combo-label">COMBO</div>
+          </div>
+
+          <div class="hud-right">
+            <div class="hud-block stat-cluster">
+              <div class="stat-item">
+                <span class="stat-value" id="hud-score">000000</span>
+                <span class="stat-label">SCORE</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value" id="hud-acc">100.0%</span>
+                <span class="stat-label">ACCURACY</span>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button class="btn" id="btn-pause-game" style="padding: 6px 12px; font-size: 12px;">일시정지</button>
+              <button class="btn" id="btn-quit-game" style="padding: 6px 12px; font-size: 12px;">게임 종료</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3D Hardware Accelerated Canvas -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- 3x3 Overlay Target Cells -->
+        <div id="grid-click-overlay">
+          <div class="grid-hit-cell" data-row="0" data-col="0"><span class="cell-key-hint">Q / 7</span></div>
+          <div class="grid-hit-cell" data-row="0" data-col="1"><span class="cell-key-hint">W / 8</span></div>
+          <div class="grid-hit-cell" data-row="0" data-col="2"><span class="cell-key-hint">E / 9</span></div>
+          <div class="grid-hit-cell" data-row="1" data-col="0"><span class="cell-key-hint">A / 4</span></div>
+          <div class="grid-hit-cell" data-row="1" data-col="1"><span class="cell-key-hint">S / 5</span></div>
+          <div class="grid-hit-cell" data-row="1" data-col="2"><span class="cell-key-hint">D / 6</span></div>
+          <div class="grid-hit-cell" data-row="2" data-col="0"><span class="cell-key-hint">Z / 1</span></div>
+          <div class="grid-hit-cell" data-row="2" data-col="1"><span class="cell-key-hint">X / 2</span></div>
+          <div class="grid-hit-cell" data-row="2" data-col="2"><span class="cell-key-hint">C / 3</span></div>
+        </div>
+
+        <div id="game-bottom-bar">
+          <button class="btn" id="btn-recalibrate-game">중심 다시 맞추기 (R)</button>
+          <div class="gyro-hud">
+            <span>자이로 감도: <strong id="hud-sens-label" style="color: var(--neon-cyan);">1.0배</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screen: Result Summary -->
+      <section class="screen" id="screen-result">
+        <div class="result-card">
+          <div style="font-size: 14px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.1em;">곡 클리어 결과</div>
+          <div class="result-grade" id="result-grade-char">S</div>
+          <div style="font-size: 18px; font-weight: 700; color: #fff;" id="result-song-title">Neon Pulse</div>
+
+          <div class="result-grid">
+            <div class="result-stat-box">
+              <span style="color: var(--text-secondary); font-size: 13px;">최종 점수</span>
+              <span id="result-final-score" style="font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: #fff;">0</span>
+            </div>
+            <div class="result-stat-box">
+              <span style="color: var(--text-secondary); font-size: 13px;">정확도</span>
+              <span id="result-final-acc" style="font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--neon-cyan);">100.00%</span>
+            </div>
+            <div class="result-stat-box">
+              <span style="color: var(--text-secondary); font-size: 13px;">최대 콤보</span>
+              <span id="result-max-combo" style="font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--neon-yellow);">0</span>
+            </div>
+            <div class="result-stat-box">
+              <span style="color: var(--text-secondary); font-size: 13px;">난이도</span>
+              <span id="result-difficulty-text" style="font-size: 14px; font-weight: 700; color: var(--neon-purple);">보통</span>
+            </div>
+          </div>
+
+          <div class="result-judgment-table">
+            <div class="judgment-box perfect">
+              <div class="judgment-name">PERFECT</div>
+              <div class="judgment-val" id="result-count-perfect">0</div>
+            </div>
+            <div class="judgment-box great">
+              <div class="judgment-name">GREAT</div>
+              <div class="judgment-val" id="result-count-great">0</div>
+            </div>
+            <div class="judgment-box good">
+              <div class="judgment-name">GOOD</div>
+              <div class="judgment-val" id="result-count-good">0</div>
+            </div>
+            <div class="judgment-box miss">
+              <div class="judgment-name">MISS</div>
+              <div class="judgment-val" id="result-count-miss">0</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 16px; width: 100%; margin-top: 8px;">
+            <button class="btn" id="btn-result-menu" style="flex: 1;">곡 선택</button>
+            <button class="btn btn-primary" id="btn-result-replay" style="flex: 1;">다시 플레이</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pause Modal -->
+      <div class="modal-backdrop" id="modal-pause">
+        <div class="modal-box">
+          <div class="modal-title">게임 일시정지</div>
+          <div class="modal-content">
+            음악과 진행이 일시정지되었습니다.
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn btn-primary" id="btn-resume-game">계속하기</button>
+            <button class="btn" id="btn-restart-game">다시 시작</button>
+            <button class="btn" id="btn-exit-to-menu">곡 선택으로 돌아가기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Modal -->
+      <div class="modal-backdrop" id="modal-settings">
+        <div class="modal-box">
+          <div class="modal-title">설정</div>
+          <div class="modal-content">
+            <div class="setting-row">
+              <span>판정 지연 보정 (Offset)</span>
+              <span id="label-offset-val" style="font-family: var(--font-mono); color: var(--neon-cyan);">0 ms</span>
+            </div>
+            <input type="range" class="slider-input" id="slider-offset" min="-150" max="150" step="5" value="0" />
+
+            <div class="setting-row" style="margin-top: 10px;">
+              <span>허브 자이로 감도</span>
+              <span id="label-sens-val" style="font-family: var(--font-mono); color: var(--neon-cyan);">1.0배</span>
+            </div>
+            <input type="range" class="slider-input" id="slider-sensitivity" min="0.5" max="2.0" step="0.1" value="1.0" />
+
+            <div style="margin-top: 8px;">
+              <button class="btn" id="btn-settings-calibrate" style="width: 100%;">중심 다시 맞추기 (R)</button>
+            </div>
+
+            <div class="setting-row" style="margin-top: 10px;">
+              <span>음악 음량</span>
+              <span id="label-bgm-vol" style="font-family: var(--font-mono); color: var(--neon-cyan);">80%</span>
+            </div>
+            <input type="range" class="slider-input" id="slider-bgm-volume" min="0" max="100" step="5" value="80" />
+
+            <div class="setting-row" style="margin-top: 10px;">
+              <span>효과음 음량</span>
+              <span id="label-sfx-vol" style="font-family: var(--font-mono); color: var(--neon-cyan);">90%</span>
+            </div>
+            <input type="range" class="slider-input" id="slider-sfx-volume" min="0" max="100" step="5" value="90" />
+          </div>
+
+          <div style="display: flex; justify-content: flex-end;">
+            <button class="btn btn-primary" id="btn-close-settings">닫기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Guide Modal -->
+      <div class="modal-backdrop" id="modal-guide">
+        <div class="modal-box" style="max-width: 520px;">
+          <div class="modal-title">조작 및 규칙 안내</div>
+          <div class="modal-content" style="line-height: 1.6;">
+            <div><strong>1. 조준:</strong> 마우스를 움직이거나 허브를 기울여 3×3 그리드의 노트를 조준합니다.</div>
+            <div><strong>2. 타격:</strong> 음악의 박자에 맞춰 마우스 왼쪽 버튼이나 스페이스바를 클릭해 노트를 타격합니다.</div>
+            <div><strong>3. 직접 타격 키보드:</strong> Q W E / A S D / Z X C 또는 숫자 패드 7 8 9 / 4 5 6 / 1 2 3 키로 해당 위치를 즉시 타격할 수 있습니다.</div>
+            <div><strong>4. 판정 및 콤보:</strong>
+              <div style="margin-top: 4px; padding-left: 12px; font-size: 13px;">
+                · PERFECT (±60ms): 1,000점<br />
+                · GREAT (±120ms): 600점<br />
+                · GOOD (±200ms): 300점<br />
+                · MISS: 콤보 초기화
+              </div>
+            </div>
+            <div><strong>5. 중심 맞추기:</strong> 언제든지 <kbd style="background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 4px;">R</kbd> 키를 눌러 허브 조준의 중심을 재설정할 수 있습니다.</div>
+          </div>
+          <div style="display: flex; justify-content: flex-end;">
+            <button class="btn btn-primary" id="btn-close-guide">확인</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paused / Disconnected Notice Modal -->
+      <div class="modal-backdrop" id="modal-disconnect">
+        <div class="modal-box">
+          <div class="modal-title">안내</div>
+          <div class="modal-content" style="font-size: 16px; font-weight: 600; text-align: center; padding: 12px 0;">
+            REPLAY에서 다시 실행해 주세요
+          </div>
+          <div style="display: flex; justify-content: center;">
+            <button class="btn btn-primary" id="btn-disconnect-confirm">확인</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Logic & Audio Engine -->
+    <script>
+      (function () {
+        'use strict';
+
+        // --- Songs Catalog ---
+        const SONGS = [
+          {
+            id: 'neon_pulse',
+            title: 'Neon Pulse',
+            artist: 'Synth Laboratory',
+            bpm: 120,
+            duration: 44, // seconds
+            desc: '안정적인 4비트 리듬과 경쾌한 신스 사운드 (입문 추천)',
+            noteCount: { easy: 36, normal: 64, hard: 92 },
+            theme: { primary: '#00e5ff', secondary: '#0284c7' }
+          },
+          {
+            id: 'cyber_resonance',
+            title: 'Cyber Resonance',
+            artist: 'Pulse Core',
+            bpm: 140,
+            duration: 48,
+            desc: '그루브 넘치는 드럼 앤 베이스와 엇박자 리듬 (중급)',
+            noteCount: { easy: 48, normal: 84, hard: 124 },
+            theme: { primary: '#a855f7', secondary: '#7e22ce' }
+          },
+          {
+            id: 'overdrive_velocity',
+            title: 'Overdrive Velocity',
+            artist: 'Neuro Overdrive',
+            bpm: 165,
+            duration: 52,
+            desc: '빠른 템포와 3×3 전역을 넘나드는 고밀도 패턴 (상급)',
+            noteCount: { easy: 64, normal: 112, hard: 168 },
+            theme: { primary: '#f43f5e', secondary: '#be123c' }
+          }
+        ];
+
+        // --- App Settings & Records ---
+        const STORAGE_KEY = 'rhythia_records_v1';
+        let records = {};
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) records = JSON.parse(raw);
+        } catch (e) {
+          records = {};
+        }
+
+        const settings = {
+          offsetMs: 0,
+          sensitivity: 1.0,
+          bgmVolume: 0.8,
+          sfxVolume: 0.9,
+          muted: false,
+          difficulty: 'normal',
+          speed: 1.5
+        };
+
+        let selectedSong = SONGS[0];
+
+        // --- SPIKE SDK Setup ---
+        let spike = null;
+        let isSpikeReady = false;
+        let tiltControl = null;
+        let waitingForCalibration = false;
+        let lastDrawnAim = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
+        const btnStart = document.getElementById('btn-start-game');
+        const hubDot = document.getElementById('hub-status-dot');
+        const hubText = document.getElementById('hub-status-text');
+
+        function initSpike() {
+          if (typeof Spike === 'undefined') {
+            btnStart.disabled = true;
+            btnStart.textContent = 'REPLAY에서 실행해 주세요';
+            hubDot.classList.remove('active');
+            hubText.textContent = 'REPLAY 환경 대기 중';
+            return;
+          }
+
+          try {
+            spike = new Spike('student.825f40a63b664939bf97c2ab6a11efd8');
+
+            spike.addEventListener('ready', () => {
+              isSpikeReady = true;
+              btnStart.disabled = false;
+              btnStart.textContent = '게임 시작';
+              hubDot.classList.add('active');
+              hubText.textContent = '허브 준비 완료';
+            });
+
+            spike.addEventListener('control', ({ detail: c }) => {
+              if (c && c.role === 'tilt') {
+                tiltControl = c;
+                if (waitingForCalibration && c.valid && c.calibrated) {
+                  waitingForCalibration = false;
+                  executeGameStart();
+                }
+              }
+            });
+
+            spike.addEventListener('paused', () => {
+              handlePausedEvent();
+            });
+
+            spike.connect();
+          } catch (err) {
+            console.error('Spike initialization error:', err);
+          }
+        }
+
+        // --- Audio Synthesizer Engine ---
+        class SynthAudioEngine {
+          constructor() {
+            this.ctx = null;
+            this.masterGain = null;
+            this.bgmGain = null;
+            this.sfxGain = null;
+            this.isPlaying = false;
+            this.activeNodes = [];
+            this.scheduleTimer = null;
+            this.generation = 0;
+          }
+
+          initContext() {
+            if (this.ctx && this.ctx.state !== 'closed') return this.ctx;
+
+            // Use spike.audio if available
+            if (spike && spike.audio && typeof spike.audio.context === 'function') {
+              try {
+                this.ctx = spike.audio.context();
+              } catch (e) {
+                this.ctx = null;
+              }
+            }
+            if (!this.ctx) {
+              const AudioCtx = window.AudioContext || window.webkitAudioContext;
+              this.ctx = new AudioCtx();
+            }
+
+            this.masterGain = this.ctx.createGain();
+            this.masterGain.gain.setValueAtTime(settings.muted ? 0 : 1, this.ctx.currentTime);
+            this.masterGain.connect(this.ctx.destination);
+
+            this.bgmGain = this.ctx.createGain();
+            this.bgmGain.gain.setValueAtTime(settings.bgmVolume, this.ctx.currentTime);
+            this.bgmGain.connect(this.masterGain);
+
+            this.sfxGain = this.ctx.createGain();
+            this.sfxGain.gain.setValueAtTime(settings.sfxVolume, this.ctx.currentTime);
+            this.sfxGain.connect(this.masterGain);
+
+            return this.ctx;
+          }
+
+          start() {
+            if (spike && spike.audio && typeof spike.audio.start === 'function') {
+              try { spike.audio.start(); } catch (e) {}
+            }
+            this.initContext();
+            if (this.ctx.state === 'suspended') {
+              this.ctx.resume();
+            }
+          }
+
+          setMuted(muted) {
+            settings.muted = muted;
+            if (spike && spike.audio && typeof spike.audio.setMuted === 'function') {
+              try { spike.audio.setMuted(muted); } catch (e) {}
+            }
+            if (this.masterGain && this.ctx) {
+              this.masterGain.gain.setValueAtTime(muted ? 0 : 1, this.ctx.currentTime);
+            }
+          }
+
+          setBgmVolume(val) {
+            settings.bgmVolume = val;
+            if (this.bgmGain && this.ctx) {
+              this.bgmGain.gain.setValueAtTime(val, this.ctx.currentTime);
+            }
+          }
+
+          setSfxVolume(val) {
+            settings.sfxVolume = val;
+            if (this.sfxGain && this.ctx) {
+              this.sfxGain.gain.setValueAtTime(val, this.ctx.currentTime);
+            }
+          }
+
+          stop() {
+            this.isPlaying = false;
+            this.generation++;
+            if (this.scheduleTimer) {
+              clearTimeout(this.scheduleTimer);
+              this.scheduleTimer = null;
+            }
+            for (const node of this.activeNodes) {
+              try {
+                if (node.stop) node.stop();
+                if (node.disconnect) node.disconnect();
+              } catch (e) {}
+            }
+            this.activeNodes = [];
+
+            if (spike && spike.audio && typeof spike.audio.stop === 'function') {
+              try { spike.audio.stop(); } catch (e) {}
+            }
+          }
+
+          // SFX: Hit Chimes
+          playHitSound(judgment) {
+            if (settings.muted) return;
+            const ctx = this.initContext();
+            const now = ctx.currentTime;
+
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+
+            if (judgment === 'PERFECT') {
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(880, now);
+              osc.frequency.exponentialRampToValueAtTime(1760, now + 0.12);
+              gain.gain.setValueAtTime(0.35, now);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+              osc.start(now);
+              osc.stop(now + 0.15);
+            } else if (judgment === 'GREAT') {
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(700, now);
+              osc.frequency.exponentialRampToValueAtTime(1100, now + 0.1);
+              gain.gain.setValueAtTime(0.3, now);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+              osc.start(now);
+              osc.stop(now + 0.12);
+            } else if (judgment === 'GOOD') {
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(520, now);
+              gain.gain.setValueAtTime(0.25, now);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+              osc.start(now);
+              osc.stop(now + 0.09);
+            } else {
+              // MISS
+              osc.type = 'sawtooth';
+              osc.frequency.setValueAtTime(140, now);
+              osc.frequency.linearRampToValueAtTime(80, now + 0.15);
+              gain.gain.setValueAtTime(0.25, now);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+              osc.start(now);
+              osc.stop(now + 0.15);
+            }
+          }
+
+          // Synthesized Music Player for Song
+          startMusic(song, startTimeOffset = 0) {
+            this.stop();
+            const ctx = this.initContext();
+            this.isPlaying = true;
+            const currentGen = this.generation;
+
+            const bpm = song.bpm;
+            const beatSec = 60 / bpm;
+            const songStartCtxTime = ctx.currentTime - startTimeOffset;
+
+            // Musical Synthesizer Loops
+            const scheduleAheadTime = 0.2;
+            let nextBeat = Math.floor(startTimeOffset / beatSec);
+
+            const scheduleTrack = () => {
+              if (!this.isPlaying || this.generation !== currentGen) return;
+
+              const currentSongTime = ctx.currentTime - songStartCtxTime;
+              if (currentSongTime >= song.duration) {
+                return;
+              }
+
+              while (nextBeat * beatSec < currentSongTime + scheduleAheadTime && nextBeat * beatSec < song.duration) {
+                const beatTime = songStartCtxTime + (nextBeat * beatSec);
+                const barIndex = Math.floor(nextBeat / 4);
+                const beatInBar = nextBeat % 4;
+
+                this.triggerSynthBeat(song.id, beatTime, beatInBar, barIndex, beatSec);
+                nextBeat++;
+              }
+
+              this.scheduleTimer = setTimeout(scheduleTrack, 50);
+            };
+
+            scheduleTrack();
+          }
+
+          triggerSynthBeat(songId, time, beatInBar, barIndex, beatSec) {
+            if (!this.ctx || time < this.ctx.currentTime - 0.05) return;
+            const ctx = this.ctx;
+
+            // 1. Kick Drum (Beat 0 and 2, or every beat in fast songs)
+            const isKick = (songId === 'overdrive_velocity') || (beatInBar === 0 || beatInBar === 2);
+            if (isKick) {
+              const kickOsc = ctx.createOscillator();
+              const kickGain = ctx.createGain();
+              kickOsc.frequency.setValueAtTime(150, time);
+              kickOsc.frequency.exponentialRampToValueAtTime(35, time + 0.1);
+              kickGain.gain.setValueAtTime(0.6, time);
+              kickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+              kickOsc.connect(kickGain);
+              kickGain.connect(this.bgmGain);
+              kickOsc.start(time);
+              kickOsc.stop(time + 0.18);
+            }
+
+            // 2. Snare / Clap (Beat 1 and 3)
+            if (beatInBar === 1 || beatInBar === 3) {
+              const snareOsc = ctx.createOscillator();
+              const snareGain = ctx.createGain();
+              snareOsc.type = 'triangle';
+              snareOsc.frequency.setValueAtTime(220, time);
+              snareGain.gain.setValueAtTime(0.3, time);
+              snareGain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+              snareOsc.connect(snareGain);
+              snareGain.connect(this.bgmGain);
+              snareOsc.start(time);
+              snareOsc.stop(time + 0.12);
+            }
+
+            // 3. Bass Synth line
+            const bassNotesBySong = {
+              neon_pulse: [110, 110, 130.81, 98], // A, A, C, G
+              cyber_resonance: [146.83, 116.54, 130.81, 110], // D, Bb, C, A
+              overdrive_velocity: [164.81, 130.81, 146.83, 123.47] // E, C, D, B
+            };
+            const roots = bassNotesBySong[songId] || [110, 110, 130, 98];
+            const rootFreq = roots[barIndex % roots.length];
+
+            const bassOsc = ctx.createOscillator();
+            const bassFilter = ctx.createBiquadFilter();
+            const bassGain = ctx.createGain();
+
+            bassOsc.type = songId === 'overdrive_velocity' ? 'sawtooth' : 'square';
+            bassOsc.frequency.setValueAtTime(rootFreq / 2, time);
+
+            bassFilter.type = 'lowpass';
+            bassFilter.frequency.setValueAtTime(450, time);
+            bassFilter.frequency.exponentialRampToValueAtTime(150, time + beatSec * 0.7);
+
+            bassGain.gain.setValueAtTime(0.35, time);
+            bassGain.gain.exponentialRampToValueAtTime(0.001, time + beatSec * 0.8);
+
+            bassOsc.connect(bassFilter);
+            bassFilter.connect(bassGain);
+            bassGain.connect(this.bgmGain);
+
+            bassOsc.start(time);
+            bassOsc.stop(time + beatSec * 0.85);
+
+            // 4. Arpeggiator / Lead Chords
+            const arpIntervals = [0, 4, 7, 12];
+            const semitone = Math.pow(2, 1 / 12);
+            for (let sub = 0; sub < 2; sub++) {
+              const subTime = time + (sub * beatSec * 0.5);
+              const noteIndex = (beatInBar * 2 + sub) % arpIntervals.length;
+              const freq = rootFreq * Math.pow(semitone, arpIntervals[noteIndex]);
+
+              const leadOsc = ctx.createOscillator();
+              const leadGain = ctx.createGain();
+              leadOsc.type = 'sawtooth';
+              leadOsc.frequency.setValueAtTime(freq, subTime);
+
+              leadGain.gain.setValueAtTime(0.18, subTime);
+              leadGain.gain.exponentialRampToValueAtTime(0.001, subTime + (beatSec * 0.45));
+
+              leadOsc.connect(leadGain);
+              leadGain.connect(this.bgmGain);
+
+              leadOsc.start(subTime);
+              leadOsc.stop(subTime + (beatSec * 0.45));
+            }
+          }
+        }
+
+        const audio = new SynthAudioEngine();
+
+        // --- Note Chart Generator ---
+        function generateNoteChart(song, difficulty) {
+          const notes = [];
+          const bpm = song.bpm;
+          const beatSec = 60 / bpm;
+          const totalBeats = Math.floor(song.duration / beatSec);
+
+          let step = 2; // beats between notes
+          if (difficulty === 'normal') step = 1;
+          if (difficulty === 'hard') step = 0.5;
+
+          // Deterministic pseudo-random pattern based on song id
+          let seed = 42;
+          function random() {
+            seed = (seed * 9301 + 49297) % 233280;
+            return seed / 233280;
+          }
+
+          let lastRow = 1;
+          let lastCol = 1;
+
+          for (let b = 2; b < totalBeats - 2; b += step) {
+            // Pick a 3x3 position (0..2, 0..2)
+            let r, c;
+            if (difficulty === 'easy') {
+              // Mostly cross & center
+              const easyPositions = [
+                { r: 1, c: 1 }, { r: 0, c: 1 }, { r: 2, c: 1 },
+                { r: 1, c: 0 }, { r: 1, c: 2 }, { r: 1, c: 1 }
+              ];
+              const p = easyPositions[Math.floor(random() * easyPositions.length)];
+              r = p.r; c = p.c;
+            } else {
+              r = Math.floor(random() * 3);
+              c = Math.floor(random() * 3);
+              // Avoid duplicate immediately
+              if (r === lastRow && c === lastCol) {
+                c = (c + 1) % 3;
+              }
+            }
+            lastRow = r;
+            lastCol = c;
+
+            notes.push({
+              time: b * beatSec,
+              row: r,
+              col: c,
+              hit: false,
+              missed: false,
+              judgment: null
+            });
+          }
+
+          return notes;
+        }
+
+        // --- Game State Variables ---
+        let gameState = 'MENU'; // 'MENU' | 'PLAYING' | 'PAUSED' | 'RESULT'
+        let currentChart = [];
+        let songStartTime = 0;
+        let pauseTime = 0;
+        let pausedDuration = 0;
+        let animFrameId = null;
+
+        let liveScore = 0;
+        let liveCombo = 0;
+        let maxCombo = 0;
+        let hitCounts = { PERFECT: 0, GREAT: 0, GOOD: 0, MISS: 0 };
+        let visualEffects = []; // particles & floating rating text
+
+        // Canvas Setup
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = canvas.clientWidth * dpr;
+          canvas.height = canvas.clientHeight * dpr;
+          ctx.resetTransform();
+          ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- DOM Elements ---
+        const screenMenu = document.getElementById('screen-menu');
+        const screenGame = document.getElementById('screen-game');
+        const screenResult = document.getElementById('screen-result');
+
+        const hudSongName = document.getElementById('hud-song-name');
+        const hudSongDiff = document.getElementById('hud-song-diff');
+        const hudProgressBar = document.getElementById('hud-progress-bar');
+        const hudCombo = document.getElementById('hud-combo');
+        const hudScore = document.getElementById('hud-score');
+        const hudAcc = document.getElementById('hud-acc');
+        const hudSensLabel = document.getElementById('hud-sens-label');
+
+        const modalPause = document.getElementById('modal-pause');
+        const modalSettings = document.getElementById('modal-settings');
+        const modalGuide = document.getElementById('modal-guide');
+        const modalDisconnect = document.getElementById('modal-disconnect');
+
+        const btnSoundToggle = document.getElementById('btn-sound-toggle');
+        const soundToggleText = document.getElementById('sound-toggle-text');
+
+        // --- Screen Switching ---
+        function setScreen(screenName) {
+          screenMenu.classList.remove('active');
+          screenGame.classList.remove('active');
+          screenResult.classList.remove('active');
+
+          if (screenName === 'MENU') screenMenu.classList.add('active');
+          if (screenName === 'GAME') screenGame.classList.add('active');
+          if (screenName === 'RESULT') screenResult.classList.add('active');
+          gameState = screenName === 'GAME' ? 'PLAYING' : screenName;
+        }
+
+        // --- Render Song Selection List ---
+        const songListContainer = document.getElementById('song-list-container');
+        function renderSongList() {
+          songListContainer.innerHTML = '';
+          SONGS.forEach((song) => {
+            const item = document.createElement('div');
+            item.className = `song-item ${song.id === selectedSong.id ? 'selected' : ''}`;
+            item.innerHTML = `
+              <div>
+                <div class="song-info-title">${song.title}</div>
+                <div class="song-meta">
+                  <span>${song.artist}</span>
+                  <span>·</span>
+                  <span class="song-bpm-badge">${song.bpm} BPM</span>
+                  <span>·</span>
+                  <span>${song.duration}초</span>
+                </div>
+              </div>
+              <div style="font-size: 13px; color: var(--neon-cyan); font-weight: 600;">
+                선택
+              </div>
+            `;
+            item.addEventListener('click', () => {
+              selectedSong = song;
+              renderSongList();
+              updateMenuRecord();
+            });
+            songListContainer.appendChild(item);
+          });
+          updateMenuRecord();
+        }
+
+        function updateMenuRecord() {
+          const key = `${selectedSong.id}_${settings.difficulty}`;
+          const rec = records[key] || { score: 0, acc: 0, combo: 0 };
+          document.getElementById('menu-record-score').textContent = rec.score.toLocaleString();
+          document.getElementById('menu-record-acc').textContent = (rec.acc || 0).toFixed(2) + '%';
+          document.getElementById('menu-record-combo').textContent = rec.combo || 0;
+        }
+
+        // --- Difficulty and Speed Segment Buttons ---
+        document.querySelectorAll('#difficulty-group .segment-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#difficulty-group .segment-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            settings.difficulty = btn.dataset.diff;
+            updateMenuRecord();
+          });
+        });
+
+        document.querySelectorAll('#speed-group .segment-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#speed-group .segment-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            settings.speed = parseFloat(btn.dataset.speed);
+          });
+        });
+
+        // --- Audio Controls ---
+        btnSoundToggle.addEventListener('click', () => {
+          settings.muted = !settings.muted;
+          audio.setMuted(settings.muted);
+          soundToggleText.textContent = settings.muted ? '소리 끔' : '소리 켬';
+        });
+
+        // --- Calibration and Gyro Handling ---
+        function recalibrateGyro() {
+          if (spike && typeof spike.calibrate === 'function') {
+            spike.calibrate();
+          }
+          lastDrawnAim = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        }
+
+        document.getElementById('btn-recalibrate-menu').addEventListener('click', recalibrateGyro);
+        document.getElementById('btn-recalibrate-game').addEventListener('click', recalibrateGyro);
+        document.getElementById('btn-settings-calibrate').addEventListener('click', recalibrateGyro);
+
+        window.addEventListener('keydown', (e) => {
+          // Shortcut R for recalibration (ignore inside text inputs)
+          if ((e.key === 'r' || e.key === 'R') && document.activeElement.tagName !== 'INPUT') {
+            recalibrateGyro();
+          }
+
+          // In-game 3x3 key hitting
+          if (gameState === 'PLAYING') {
+            const keyMap = {
+              'q': [0, 0], 'w': [0, 1], 'e': [0, 2],
+              'a': [1, 0], 's': [1, 1], 'd': [1, 2],
+              'z': [2, 0], 'x': [2, 1], 'c': [2, 2],
+              '7': [0, 0], '8': [0, 1], '9': [0, 2],
+              '4': [1, 0], '5': [1, 1], '6': [1, 2],
+              '1': [2, 0], '2': [2, 1], '3': [2, 2],
+              ' ': 'AIM_CELL'
+            };
+            const lower = e.key.toLowerCase();
+            if (keyMap[lower]) {
+              e.preventDefault();
+              if (keyMap[lower] === 'AIM_CELL') {
+                triggerHitAtAim();
+              } else {
+                const [r, c] = keyMap[lower];
+                triggerHitAtCell(r, c);
+              }
+            }
+          }
+        });
+
+        // --- Game Start Workflow ---
+        btnStart.addEventListener('click', () => {
+          if (typeof Spike === 'undefined') {
+            return;
+          }
+
+          audio.start();
+
+          if (spike && typeof spike.calibrate === 'function') {
+            waitingForCalibration = true;
+            spike.calibrate();
+            // If already calibrated, proceed
+            if (tiltControl && tiltControl.valid && tiltControl.calibrated) {
+              waitingForCalibration = false;
+              executeGameStart();
+            }
+          } else {
+            executeGameStart();
+          }
+        });
+
+        function executeGameStart() {
+          setScreen('GAME');
+          resizeCanvas();
+
+          currentChart = generateNoteChart(selectedSong, settings.difficulty);
+          liveScore = 0;
+          liveCombo = 0;
+          maxCombo = 0;
+          hitCounts = { PERFECT: 0, GREAT: 0, GOOD: 0, MISS: 0 };
+          visualEffects = [];
+          pausedDuration = 0;
+
+          hudSongName.textContent = selectedSong.title;
+          const diffLabels = { easy: '쉬움', normal: '보통', hard: '어려움' };
+          hudSongDiff.textContent = `${diffLabels[settings.difficulty]} · ${selectedSong.bpm} BPM`;
+          hudSensLabel.textContent = `${settings.sensitivity.toFixed(1)}배`;
+
+          updateHUD();
+
+          // Start Audio & Game Clock
+          const ctx = audio.initContext();
+          songStartTime = ctx.currentTime;
+          audio.startMusic(selectedSong, 0);
+
+          if (animFrameId) cancelAnimationFrame(animFrameId);
+          animFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- Time Tracking ---
+        function getSongTime() {
+          if (!audio.ctx || songStartTime === 0) return 0;
+          if (gameState === 'PAUSED') {
+            return (pauseTime - songStartTime - pausedDuration) + (settings.offsetMs / 1000);
+          }
+          return (audio.ctx.currentTime - songStartTime - pausedDuration) + (settings.offsetMs / 1000);
+        }
+
+        // --- Aim & Grid Geometry ---
+        function getCellRect(row, col) {
+          const overlay = document.getElementById('grid-click-overlay');
+          const rect = overlay.getBoundingClientRect();
+          const cellW = rect.width / 3;
+          const cellH = rect.height / 3;
+          return {
+            x: rect.left + col * cellW,
+            y: rect.top + row * cellH,
+            w: cellW,
+            h: cellH,
+            cx: rect.left + (col + 0.5) * cellW,
+            cy: rect.top + (row + 0.5) * cellH
+          };
+        }
+
+        function getAimedCell() {
+          const overlay = document.getElementById('grid-click-overlay');
+          const rect = overlay.getBoundingClientRect();
+          const x = lastDrawnAim.x;
+          const y = lastDrawnAim.y;
+
+          if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+            const col = Math.min(2, Math.max(0, Math.floor((x - rect.left) / (rect.width / 3))));
+            const row = Math.min(2, Math.max(0, Math.floor((y - rect.top) / (rect.height / 3))));
+            return { row, col };
+          }
+          return null;
+        }
+
+        // Mouse tracking on canvas
+        window.addEventListener('mousemove', (e) => {
+          if (gameState === 'PLAYING') {
+            // If tilt is not actively overriding, mouse drives lastDrawnAim
+            if (!tiltControl || !tiltControl.valid) {
+              lastDrawnAim = { x: e.clientX, y: e.clientY };
+            }
+          }
+        });
+
+        // 3x3 Click handlers
+        document.querySelectorAll('.grid-hit-cell').forEach((cell) => {
+          cell.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            const r = parseInt(cell.dataset.row, 10);
+            const c = parseInt(cell.dataset.col, 10);
+            triggerHitAtCell(r, c);
+          });
+        });
+
+        // Left click anywhere on game area hits the aimed cell
+        canvas.addEventListener('mousedown', (e) => {
+          if (e.button === 0 && gameState === 'PLAYING') {
+            triggerHitAtAim();
+          }
+        });
+
+        function triggerHitAtAim() {
+          const cell = getAimedCell();
+          if (cell) {
+            triggerHitAtCell(cell.row, cell.col);
+          } else {
+            // Visual tap feedback
+            createTapWave(lastDrawnAim.x, lastDrawnAim.y);
+          }
+        }
+
+        function triggerHitAtCell(row, col) {
+          const songTime = getSongTime();
+          const cellRect = getCellRect(row, col);
+
+          // Pulse cell visual
+          const cellEl = document.querySelector(`.grid-hit-cell[data-row="${row}"][data-col="${col}"]`);
+          if (cellEl) {
+            cellEl.classList.add('pulse');
+            setTimeout(() => cellEl.classList.remove('pulse'), 120);
+          }
+
+          // Find candidate note
+          let candidate = null;
+          let minDiff = 999;
+
+          for (const note of currentChart) {
+            if (note.row === row && note.col === col && !note.hit && !note.missed) {
+              const diff = Math.abs(songTime - note.time);
+              if (diff < minDiff && diff <= 0.200) {
+                minDiff = diff;
+                candidate = note;
+              }
+            }
+          }
+
+          if (candidate) {
+            candidate.hit = true;
+            let judgment = 'GOOD';
+            let scoreAdd = 300;
+
+            if (minDiff <= 0.060) {
+              judgment = 'PERFECT';
+              scoreAdd = 1000;
+            } else if (minDiff <= 0.120) {
+              judgment = 'GREAT';
+              scoreAdd = 600;
+            }
+
+            candidate.judgment = judgment;
+            hitCounts[judgment]++;
+            liveCombo++;
+            if (liveCombo > maxCombo) maxCombo = liveCombo;
+
+            // Score with combo bonus
+            liveScore += scoreAdd + Math.min(200, liveCombo * 10);
+
+            // Audio & SPIKE feedback
+            audio.playHitSound(judgment);
+
+            if (spike) {
+              if (typeof spike.recordInput === 'function') {
+                spike.recordInput('shot', { x: lastDrawnAim.x, y: lastDrawnAim.y });
+              }
+              if (typeof spike.light === 'function') {
+                spike.light(1);
+              }
+            }
+
+            // Visual effects
+            createJudgmentParticle(cellRect.cx, cellRect.cy, judgment);
+            updateHUD();
+          } else {
+            // Tap miss wave
+            createTapWave(cellRect.cx, cellRect.cy);
+          }
+        }
+
+        function createJudgmentParticle(x, y, text) {
+          visualEffects.push({
+            type: 'judgment',
+            x: x,
+            y: y - 20,
+            text: text,
+            life: 1.0,
+            color: text === 'PERFECT' ? '#00e5ff' : (text === 'GREAT' ? '#a855f7' : (text === 'GOOD' ? '#facc15' : '#f43f5e'))
+          });
+
+          // Spark particles
+          for (let i = 0; i < 16; i++) {
+            const angle = (Math.PI * 2 / 16) * i + Math.random() * 0.2;
+            const speed = 2 + Math.random() * 4;
+            visualEffects.push({
+              type: 'spark',
+              x: x,
+              y: y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              life: 1.0,
+              color: text === 'PERFECT' ? '#00e5ff' : '#a855f7'
+            });
+          }
+        }
+
+        function createTapWave(x, y) {
+          visualEffects.push({
+            type: 'wave',
+            x: x,
+            y: y,
+            radius: 10,
+            maxRadius: 40,
+            life: 1.0
+          });
+        }
+
+        function updateHUD() {
+          hudCombo.textContent = liveCombo;
+          hudCombo.style.transform = 'scale(1.2)';
+          setTimeout(() => { hudCombo.style.transform = 'scale(1)'; }, 80);
+
+          hudScore.textContent = liveScore.toString().padStart(6, '0');
+
+          const totalJudged = hitCounts.PERFECT + hitCounts.GREAT + hitCounts.GOOD + hitCounts.MISS;
+          if (totalJudged > 0) {
+            const weighted = (hitCounts.PERFECT * 1.0) + (hitCounts.GREAT * 0.7) + (hitCounts.GOOD * 0.4);
+            const acc = (weighted / totalJudged) * 100;
+            hudAcc.textContent = acc.toFixed(1) + '%';
+          } else {
+            hudAcc.textContent = '100.0%';
+          }
+        }
+
+        // --- Main Game Render Loop ---
+        function gameLoop(frameTime) {
+          if (gameState !== 'PLAYING') return;
+
+          const songTime = getSongTime();
+          const progress = Math.min(1, songTime / selectedSong.duration);
+          hudProgressBar.style.width = (progress * 100) + '%';
+
+          // 1. Process Hub tilt controls if active
+          if (spike && typeof spike.readControl === 'function') {
+            const c = spike.readControl('tilt', frameTime);
+            if (c && c.valid && c.calibrated) {
+              tiltControl = c;
+              if (c.status !== 'posture') {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                // Reverse Y as specified in SPIKE SDK guidelines
+                const aimX = (w / 2) + (c.x * (w / 2));
+                const aimY = (h / 2) - (c.y * (h / 2));
+                lastDrawnAim = { x: aimX, y: aimY };
+              }
+            }
+          }
+
+          // Highlight aimed cell in DOM overlay
+          const aimed = getAimedCell();
+          document.querySelectorAll('.grid-hit-cell').forEach((cell) => {
+            const r = parseInt(cell.dataset.row, 10);
+            const c = parseInt(cell.dataset.col, 10);
+            if (aimed && aimed.row === r && aimed.col === c) {
+              cell.classList.add('aimed');
+            } else {
+              cell.classList.remove('aimed');
+            }
+          });
+
+          // 2. Miss Detection
+          for (const note of currentChart) {
+            if (!note.hit && !note.missed && songTime - note.time > 0.200) {
+              note.missed = true;
+              note.judgment = 'MISS';
+              hitCounts.MISS++;
+              liveCombo = 0;
+              const cellRect = getCellRect(note.row, note.col);
+              createJudgmentParticle(cellRect.cx, cellRect.cy, 'MISS');
+              audio.playHitSound('MISS');
+              updateHUD();
+            }
+          }
+
+          // 3. Render Canvas (3D Tunnel & Notes)
+          renderScene(songTime);
+
+          // 4. Song Completion Check
+          if (songTime >= selectedSong.duration + 1.2) {
+            finishGame();
+            return;
+          }
+
+          animFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- Render 3D Perspective Arena ---
+        function renderScene(songTime) {
+          const w = canvas.clientWidth;
+          const h = canvas.clientHeight;
+          ctx.clearRect(0, 0, w, h);
+
+          const centerX = w / 2;
+          const centerY = h / 2;
+
+          // 3D Grid Tunnel
+          const overlay = document.getElementById('grid-click-overlay');
+          const gridRect = overlay.getBoundingClientRect();
+
+          // Vanishing point lines
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+          ctx.lineWidth = 1;
+          for (let r = 0; r <= 3; r++) {
+            for (let c = 0; c <= 3; c++) {
+              const x = gridRect.left + (c * (gridRect.width / 3));
+              const y = gridRect.top + (r * (gridRect.height / 3));
+              ctx.beginPath();
+              ctx.moveTo(centerX, centerY);
+              ctx.lineTo(x, y);
+              ctx.stroke();
+            }
+          }
+
+          // Approaching Notes
+          const approachDuration = 1.6 / settings.speed;
+
+          for (const note of currentChart) {
+            if (note.hit || note.missed) continue;
+            const dt = note.time - songTime;
+
+            if (dt > 0 && dt <= approachDuration) {
+              const t = 1 - (dt / approachDuration); // 0 (far) to 1 (at judgment plane)
+              const cellRect = getCellRect(note.row, note.col);
+
+              // Perspective interpolation
+              const noteX = centerX + (cellRect.cx - centerX) * t;
+              const noteY = centerY + (cellRect.cy - centerY) * t;
+              const size = 12 + t * (cellRect.w * 0.45);
+
+              // Outer shrinking judgment ring
+              const ringRadius = size * (1 + dt * 2);
+
+              ctx.save();
+              ctx.beginPath();
+              ctx.arc(noteX, noteY, ringRadius, 0, Math.PI * 2);
+              ctx.strokeStyle = `rgba(0, 229, 255, ${Math.min(1, t * 1.2)})`;
+              ctx.lineWidth = 2;
+              ctx.stroke();
+
+              // Glowing Core
+              const grad = ctx.createRadialGradient(noteX, noteY, 2, noteX, noteY, size);
+              grad.addColorStop(0, '#ffffff');
+              grad.addColorStop(0.4, selectedSong.theme.primary);
+              grad.addColorStop(1, 'rgba(0, 229, 255, 0)');
+
+              ctx.beginPath();
+              ctx.arc(noteX, noteY, size, 0, Math.PI * 2);
+              ctx.fillStyle = grad;
+              ctx.shadowColor = selectedSong.theme.primary;
+              ctx.shadowBlur = 16 * t;
+              ctx.fill();
+              ctx.restore();
+            }
+          }
+
+          // Crosshair / Aim Reticle
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(lastDrawnAim.x, lastDrawnAim.y, 18, 0, Math.PI * 2);
+          ctx.strokeStyle = '#00e5ff';
+          ctx.lineWidth = 2;
+          ctx.shadowColor = '#00e5ff';
+          ctx.shadowBlur = 12;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(lastDrawnAim.x, lastDrawnAim.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+
+          // Cross lines
+          ctx.beginPath();
+          ctx.moveTo(lastDrawnAim.x - 26, lastDrawnAim.y);
+          ctx.lineTo(lastDrawnAim.x - 8, lastDrawnAim.y);
+          ctx.moveTo(lastDrawnAim.x + 8, lastDrawnAim.y);
+          ctx.lineTo(lastDrawnAim.x + 26, lastDrawnAim.y);
+          ctx.moveTo(lastDrawnAim.x, lastDrawnAim.y - 26);
+          ctx.lineTo(lastDrawnAim.x, lastDrawnAim.y - 8);
+          ctx.moveTo(lastDrawnAim.x, lastDrawnAim.y + 8);
+          ctx.lineTo(lastDrawnAim.x, lastDrawnAim.y + 26);
+          ctx.strokeStyle = 'rgba(0, 229, 255, 0.7)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+
+          // Visual particles & floating text
+          for (let i = visualEffects.length - 1; i >= 0; i--) {
+            const fx = visualEffects[i];
+            fx.life -= 0.03;
+
+            if (fx.life <= 0) {
+              visualEffects.splice(i, 1);
+              continue;
+            }
+
+            if (fx.type === 'judgment') {
+              fx.y -= 0.8;
+              ctx.save();
+              ctx.font = '900 24px ui-monospace, sans-serif';
+              ctx.fillStyle = fx.color;
+              ctx.shadowColor = fx.color;
+              ctx.shadowBlur = 12;
+              ctx.textAlign = 'center';
+              ctx.globalAlpha = fx.life;
+              ctx.fillText(fx.text, fx.x, fx.y);
+              ctx.restore();
+            } else if (fx.type === 'spark') {
+              fx.x += fx.vx;
+              fx.y += fx.vy;
+              ctx.save();
+              ctx.beginPath();
+              ctx.arc(fx.x, fx.y, 2.5 * fx.life, 0, Math.PI * 2);
+              ctx.fillStyle = fx.color;
+              ctx.globalAlpha = fx.life;
+              ctx.fill();
+              ctx.restore();
+            } else if (fx.type === 'wave') {
+              fx.radius += (fx.maxRadius - fx.radius) * 0.15;
+              ctx.save();
+              ctx.beginPath();
+              ctx.arc(fx.x, fx.y, fx.radius, 0, Math.PI * 2);
+              ctx.strokeStyle = `rgba(255, 255, 255, ${fx.life * 0.4})`;
+              ctx.lineWidth = 2;
+              ctx.stroke();
+              ctx.restore();
+            }
+          }
+        }
+
+        // --- Game End / Results ---
+        function finishGame() {
+          if (animFrameId) cancelAnimationFrame(animFrameId);
+          animFrameId = null;
+          audio.stop();
+
+          if (spike && typeof spike.stop === 'function') {
+            spike.stop();
+          }
+
+          const totalJudged = hitCounts.PERFECT + hitCounts.GREAT + hitCounts.GOOD + hitCounts.MISS;
+          const weighted = (hitCounts.PERFECT * 1.0) + (hitCounts.GREAT * 0.7) + (hitCounts.GOOD * 0.4);
+          const finalAcc = totalJudged > 0 ? (weighted / totalJudged) * 100 : 100;
+
+          let grade = 'D';
+          if (finalAcc >= 95) grade = 'S';
+          else if (finalAcc >= 90) grade = 'A';
+          else if (finalAcc >= 80) grade = 'B';
+          else if (finalAcc >= 70) grade = 'C';
+
+          // Save high score record
+          const key = `${selectedSong.id}_${settings.difficulty}`;
+          const prev = records[key] || { score: 0, acc: 0, combo: 0 };
+          if (liveScore > prev.score) {
+            records[key] = {
+              score: liveScore,
+              acc: Math.max(prev.acc, finalAcc),
+              combo: Math.max(prev.combo, maxCombo)
+            };
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            } catch (e) {}
+          }
+
+          // Populate Result UI
+          document.getElementById('result-grade-char').textContent = grade;
+          document.getElementById('result-song-title').textContent = selectedSong.title;
+          document.getElementById('result-final-score').textContent = liveScore.toLocaleString();
+          document.getElementById('result-final-acc').textContent = finalAcc.toFixed(2) + '%';
+          document.getElementById('result-max-combo').textContent = maxCombo;
+
+          const diffLabels = { easy: '쉬움', normal: '보통', hard: '어려움' };
+          document.getElementById('result-difficulty-text').textContent = diffLabels[settings.difficulty];
+
+          document.getElementById('result-count-perfect').textContent = hitCounts.PERFECT;
+          document.getElementById('result-count-great').textContent = hitCounts.GREAT;
+          document.getElementById('result-count-good').textContent = hitCounts.GOOD;
+          document.getElementById('result-count-miss').textContent = hitCounts.MISS;
+
+          setScreen('RESULT');
+        }
+
+        // Result screen action buttons
+        document.getElementById('btn-result-replay').addEventListener('click', () => {
+          executeGameStart();
+        });
+
+        document.getElementById('btn-result-menu').addEventListener('click', () => {
+          cleanupAndReturnToMenu();
+        });
+
+        // --- Pause & Exit Controls ---
+        document.getElementById('btn-pause-game').addEventListener('click', () => {
+          if (gameState !== 'PLAYING') return;
+          gameState = 'PAUSED';
+          pauseTime = audio.ctx ? audio.ctx.currentTime : 0;
+          audio.stop();
+          modalPause.classList.add('active');
+        });
+
+        document.getElementById('btn-resume-game').addEventListener('click', () => {
+          if (gameState !== 'PAUSED') return;
+          modalPause.classList.remove('active');
+          const now = audio.ctx ? audio.ctx.currentTime : 0;
+          pausedDuration += (now - pauseTime);
+          gameState = 'PLAYING';
+
+          // Resume audio from current offset
+          const resumeOffset = getSongTime();
+          audio.startMusic(selectedSong, resumeOffset);
+
+          animFrameId = requestAnimationFrame(gameLoop);
+        });
+
+        document.getElementById('btn-restart-game').addEventListener('click', () => {
+          modalPause.classList.remove('active');
+          executeGameStart();
+        });
+
+        document.getElementById('btn-exit-to-menu').addEventListener('click', () => {
+          modalPause.classList.remove('active');
+          cleanupAndReturnToMenu();
+        });
+
+        document.getElementById('btn-quit-game').addEventListener('click', () => {
+          cleanupAndReturnToMenu();
+        });
+
+        function cleanupAndReturnToMenu() {
+          if (animFrameId) cancelAnimationFrame(animFrameId);
+          animFrameId = null;
+          audio.stop();
+          if (spike && typeof spike.stop === 'function') {
+            spike.stop();
+          }
+          setScreen('MENU');
+          renderSongList();
+        }
+
+        function handlePausedEvent() {
+          if (animFrameId) cancelAnimationFrame(animFrameId);
+          animFrameId = null;
+          audio.stop();
+          if (spike && typeof spike.stop === 'function') {
+            spike.stop();
+          }
+          modalPause.classList.remove('active');
+          modalDisconnect.classList.add('active');
+        }
+
+        document.getElementById('btn-disconnect-confirm').addEventListener('click', () => {
+          modalDisconnect.classList.remove('active');
+          cleanupAndReturnToMenu();
+        });
+
+        // --- Settings Modal Handlers ---
+        const sliderOffset = document.getElementById('slider-offset');
+        const labelOffsetVal = document.getElementById('label-offset-val');
+        sliderOffset.addEventListener('input', () => {
+          settings.offsetMs = parseInt(sliderOffset.value, 10);
+          labelOffsetVal.textContent = `${settings.offsetMs} ms`;
+        });
+
+        const sliderSensitivity = document.getElementById('slider-sensitivity');
+        const labelSensVal = document.getElementById('label-sens-val');
+        sliderSensitivity.addEventListener('input', () => {
+          settings.sensitivity = parseFloat(sliderSensitivity.value);
+          labelSensVal.textContent = `${settings.sensitivity.toFixed(1)}배`;
+          hudSensLabel.textContent = `${settings.sensitivity.toFixed(1)}배`;
+          if (spike && typeof spike.setSensitivity === 'function') {
+            spike.setSensitivity('tilt', settings.sensitivity);
+          }
+        });
+
+        const sliderBgm = document.getElementById('slider-bgm-volume');
+        const labelBgm = document.getElementById('label-bgm-vol');
+        sliderBgm.addEventListener('input', () => {
+          const val = parseInt(sliderBgm.value, 10) / 100;
+          audio.setBgmVolume(val);
+          labelBgm.textContent = `${sliderBgm.value}%`;
+        });
+
+        const sliderSfx = document.getElementById('slider-sfx-volume');
+        const labelSfx = document.getElementById('label-sfx-vol');
+        sliderSfx.addEventListener('input', () => {
+          const val = parseInt(sliderSfx.value, 10) / 100;
+          audio.setSfxVolume(val);
+          labelSfx.textContent = `${sliderSfx.value}%`;
+        });
+
+        document.getElementById('btn-open-settings').addEventListener('click', () => {
+          modalSettings.classList.add('active');
+        });
+
+        document.getElementById('btn-close-settings').addEventListener('click', () => {
+          modalSettings.classList.remove('active');
+        });
+
+        document.getElementById('btn-show-guide').addEventListener('click', () => {
+          modalGuide.classList.add('active');
+        });
+
+        document.getElementById('btn-close-guide').addEventListener('click', () => {
+          modalGuide.classList.remove('active');
+        });
+
+        // Close modal on click backdrop
+        [modalSettings, modalGuide].forEach((m) => {
+          m.addEventListener('click', (e) => {
+            if (e.target === m) m.classList.remove('active');
+          });
+        });
+
+        // Page visibility change / pagehide stop audio
+        window.addEventListener('pagehide', () => {
+          audio.stop();
+          if (spike && typeof spike.stop === 'function') {
+            spike.stop();
+          }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden && gameState === 'PLAYING') {
+            document.getElementById('btn-pause-game').click();
+          }
+        });
+
+        // Initialize App
+        renderSongList();
+        initSpike();
+      })();
+    </script>
+  </body>
+</html>
